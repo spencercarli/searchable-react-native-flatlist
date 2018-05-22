@@ -7,6 +7,7 @@ import {
   SafeAreaView
 } from "react-native";
 import { List, ListItem, SearchBar } from "react-native-elements";
+import _ from "lodash";
 import { getUsers } from "./api/index";
 
 class App extends Component {
@@ -25,7 +26,7 @@ class App extends Component {
     this.makeRemoteRequest();
   }
 
-  makeRemoteRequest = () => {
+  makeRemoteRequest = _.debounce(() => {
     this.setState({ loading: true });
 
     getUsers(20, this.state.query)
@@ -38,7 +39,7 @@ class App extends Component {
       .catch(error => {
         this.setState({ error, loading: false });
       });
-  };
+  }, 250);
 
   handleSearch = text => {
     this.setState({ query: text }, () => this.makeRemoteRequest());
