@@ -16,7 +16,8 @@ class App extends Component {
     this.state = {
       loading: false,
       data: [],
-      error: null
+      error: null,
+      query: ""
     };
   }
 
@@ -27,7 +28,7 @@ class App extends Component {
   makeRemoteRequest = () => {
     this.setState({ loading: true });
 
-    getUsers()
+    getUsers(20, this.state.query)
       .then(users => {
         this.setState({
           loading: false,
@@ -37,6 +38,10 @@ class App extends Component {
       .catch(error => {
         this.setState({ error, loading: false });
       });
+  };
+
+  handleSearch = text => {
+    this.setState({ query: text }, () => this.makeRemoteRequest());
   };
 
   renderSeparator = () => {
@@ -53,7 +58,14 @@ class App extends Component {
   };
 
   renderHeader = () => {
-    return <SearchBar placeholder="Type Here..." lightTheme round />;
+    return (
+      <SearchBar
+        placeholder="Type Here..."
+        lightTheme
+        round
+        onChangeText={this.handleSearch}
+      />
+    );
   };
 
   renderFooter = () => {
