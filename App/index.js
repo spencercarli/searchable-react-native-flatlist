@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { List, ListItem, SearchBar } from "react-native-elements";
 import _ from "lodash";
-import { getUsers } from "./api/index";
+import { getUsers, contains } from "./api/index";
 
 class App extends Component {
   constructor(props) {
@@ -18,7 +18,8 @@ class App extends Component {
       loading: false,
       data: [],
       error: null,
-      query: ""
+      query: "",
+      fullData: []
     };
   }
 
@@ -33,7 +34,8 @@ class App extends Component {
       .then(users => {
         this.setState({
           loading: false,
-          data: users
+          data: users,
+          fullData: users
         });
       })
       .catch(error => {
@@ -42,7 +44,11 @@ class App extends Component {
   }, 250);
 
   handleSearch = text => {
-    this.setState({ query: text }, () => this.makeRemoteRequest());
+    const formattedQuery = text.toLowerCase();
+    const data = _.filter(this.state.fullData, user => {
+      return contains(user, formattedQuery);
+    });
+    this.setState({ data, query: text }, () => this.makeRemoteRequest());
   };
 
   renderSeparator = () => {
