@@ -1,13 +1,16 @@
 import React, { Component } from "react";
+
 import {
   View,
   Text,
   FlatList,
   ActivityIndicator,
-  SafeAreaView
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
-import { List, ListItem, SearchBar } from "react-native-elements";
-import { getUsers } from "./api/index";
+import _ from "lodash";
+import { ListItem, SearchBar, Avatar } from "react-native-elements";
+import { getUsers, contains } from "./api/index";
 
 class App extends Component {
   constructor(props) {
@@ -16,7 +19,7 @@ class App extends Component {
     this.state = {
       loading: false,
       data: [],
-      error: null
+      error: null,
     };
   }
 
@@ -24,19 +27,28 @@ class App extends Component {
     this.makeRemoteRequest();
   }
 
-  makeRemoteRequest = () => {
+  makeRemoteRequest = _.debounce(() => {
     this.setState({ loading: true });
 
-    getUsers()
-      .then(users => {
+    getUsers(20, this.state.query)
+      .then((users) => {
         this.setState({
           loading: false,
-          data: users
+          data: users,
+          fullData: users,
         });
       })
-      .catch(error => {
+      .catch((error) => {
         this.setState({ error, loading: false });
       });
+  }, 250);
+
+  handleSearch = (text) => {
+    const formattedQuery = text.toLowerCase();
+    const data = _.filter(this.state.fullData, (user) => {
+      return contains(user, formattedQuery);
+    });
+    this.setState({ data, query: text }, () => this.makeRemoteRequest());
   };
 
   renderSeparator = () => {
@@ -46,14 +58,22 @@ class App extends Component {
           height: 1,
           width: "86%",
           backgroundColor: "#CED0CE",
-          marginLeft: "14%"
+          marginLeft: "14%",
         }}
       />
     );
   };
 
   renderHeader = () => {
-    return <SearchBar placeholder="Type Here..." lightTheme round />;
+    return (
+      <SearchBar
+        placeholder="Type Here..."
+        lightTheme
+        round
+        onChangeText={this.handleSearch}
+        value={this.state.query}
+      />
+    );
   };
 
   renderFooter = () => {
@@ -64,7 +84,7 @@ class App extends Component {
         style={{
           paddingVertical: 20,
           borderTopWidth: 1,
-          borderColor: "#CED0CE"
+          borderColor: "#CED0CE",
         }}
       >
         <ActivityIndicator animating size="large" />
@@ -75,24 +95,24 @@ class App extends Component {
   render() {
     return (
       <SafeAreaView>
-        <List containerStyle={{ borderTopWidth: 0, borderBottomWidth: 0 }}>
-          <FlatList
-            data={this.state.data}
-            renderItem={({ item }) => (
-              <ListItem
-                roundAvatar
-                title={`${item.name.first} ${item.name.last}`}
-                subtitle={item.email}
-                avatar={{ uri: item.picture.thumbnail }}
-                containerStyle={{ borderBottomWidth: 0 }}
-              />
-            )}
-            keyExtractor={item => item.email}
-            ItemSeparatorComponent={this.renderSeparator}
-            ListHeaderComponent={this.renderHeader}
-            ListFooterComponent={this.renderFooter}
-          />
-        </List>
+        <StatusBar style="light-content" />
+        <FlatList
+          data={this.state.data}
+          renderItem={({ item }) => (
+            <ListItem bottomDivider>
+              <Avatar source={{ uri: item.picture.thumbnail }} rounded />
+              <ListItem.Content>
+                <ListItem.Title>{`${item.name.first} ${item.name.last}`}</ListItem.Title>
+                <ListItem.Subtitle>{item.email}</ListItem.Subtitle>
+              </ListItem.Content>
+              <ListItem.Chevron />
+            </ListItem>
+          )}
+          keyExtractor={(item) => item.email}
+          ItemSeparatorComponent={this.renderSeparator}
+          ListHeaderComponent={this.renderHeader}
+          ListFooterComponent={this.renderFooter}
+        />
       </SafeAreaView>
     );
   }
